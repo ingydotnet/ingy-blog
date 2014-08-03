@@ -4,7 +4,7 @@ How YAML is Loaded
 There is a lot of misunderstanding in the wild about how YAML is *loaded* from
 text to an in-memory data structure. It's understandable, because the
 "YAML Spec"[http://yaml.org/spec/1.2/spec.html] is a formidable beast to grok,
-and it conentrates heavily on the parsing rules, and less on the other phases.
+and it concentrates heavily on the parsing rules, and less on the other phases.
 
 As one of the 3 people who worked out how YAML is supposed to operate, I'll try
 to explain the *loading* process in plainer English here. This post was
@@ -112,7 +112,7 @@ and the answer should now be fairly obvious. By default (no special schema
 requests) and if the Native language supports floating point numbers, it should
 be loaded as a number.
 
-So loading this is a `5.2` is completely appropriate, and in a multi-language
+So loading this as a `5.2` is completely appropriate. In a multi-language
 environment like Travis-CI, users should quote things like this, thus
 indicating it should be a string:
 

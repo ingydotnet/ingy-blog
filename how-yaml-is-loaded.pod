@@ -1,6 +1,6 @@
 =head1 How YAML is Loaded
 
-There is a lot of misunderstanding in the wild about how YAML is B<loaded> from text to an in-memory data structure. It's understandable, because the L<YAML Spec|http://yaml.org/spec/1.2/spec.html> is a formidable beast to grok, and it conentrates heavily on the parsing rules, and less on the other phases.
+There is a lot of misunderstanding in the wild about how YAML is B<loaded> from text to an in-memory data structure. It's understandable, because the L<YAML Spec|http://yaml.org/spec/1.2/spec.html> is a formidable beast to grok, and it concentrates heavily on the parsing rules, and less on the other phases.
 
 As one of the 3 people who worked out how YAML is supposed to operate, I'll try to explain the B<loading> process in plainer English here. This post was inspired by L<this GitHub Issue|https://github.com/travis-ci/travis-ci/issues/2615>, but stuff of this nature comes up all the time in YAML.
 
@@ -69,7 +69,7 @@ The GitHub issue above deals with how to load:
 
 and the answer should now be fairly obvious. By default (no special schema requests) and if the Native language supports floating point numbers, it should be loaded as a number.
 
-So loading this is a C<5.2> is completely appropriate, and in a multi-language environment like Travis-CI, users should quote things like this, thus indicating it should be a string:
+So loading this as a C<5.2> is completely appropriate. In a multi-language environment like Travis-CI, users should quote things like this, thus indicating it should be a string:
 
       perl:
       - '5.20'
