@@ -1,0 +1,145 @@
+How YAML is Loaded
+==================
+
+There is a lot of misunderstanding in the wild about how YAML is *loaded* from
+text to an in-memory data structure. It's understandable, because the
+"YAML Spec"[http://yaml.org/spec/1.2/spec.html] is a formidable beast to grok,
+and it conentrates heavily on the parsing rules, and less on the other phases.
+
+As one of the 3 people who worked out how YAML is supposed to operate, I'll try
+to explain the *loading* process in plainer English here. This post was
+inspired by
+"this GitHub Issue"[https://github.com/travis-ci/travis-ci/issues/2615], but
+stuff of this nature comes up all the time in YAML.
+
+= Load vs Parse vs Decode
+
+First, a quick note on terminology. The term *load* is the proper name for the
+operation of taking YAML from text to Native. It is made up of a few distinct
+phases: *read*, *scan*, *parse*, *compose*, *resolve*, *construct*. All these
+phases combined is called *load*.
+
+The *parse* phase, which often lumps in *read* and *scan* (aka *lex*), takes
+YAML text and turns it into a stream of event objects.
+
+The term *decode* (and *encode*) most appropriately means turning one string
+form into another string form. Like HTML encoding or UTF8 encoding. This term
+is not used much in YAML parlance. And most certainly *parse* and *decode*
+never mean *load*, even though they are often used in the wild that way.
+
+= Parsing
+
+As I said above, *parsing* takes YAML text and emits a stream of YAML events.
+At this point, all the leaf values are `SCALAR` events. The event contains the
+unicode character string value, after all the escaping has been resolved. The
+event also contains a flag of whether the original scalar was quoted or not.
+(This is a key point.)
+
+Note: Even if a given YAML implementation doesn't actually create events,
+people need to think of this phase as happening, to discuss issues of loading
+properly.
+
+The parser basically thinks of every scalar as string, but it also can have a
+tag too, although the tag is rarely explicitly in the original YAML text. Even
+though YAML has 5 scalar styles (plain / unquoted, single-quoted,
+double-quoted, literal, and folded), the parser only reports whether it was
+plain or not.
+
+That's because the next phases use the /plain clue/ to determine the scalar's
+tag (ie its type).
+
+= Composing
+
+The next phase is composition, and one thing that happens here, is called /type
+resolution/. That means assigning every node a YAML tag like `!!str` or
+`!!int`. A full featured YAML implementation can get as fancy as it wants on
+type resolution, allowing the user to configure what values get which tags.
+
+The YAML default resolution is this:
+
+* If a scalar is not plain, it gets !!str.
+* If a plain scalar looks like a bool, int, float or null it gets the matching
+  tag.
+* Otherwise the plain scalar gets the !!str tag.
+
+= Construction
+
+The final phase of loading is called construction. This is where things become
+Native Objects. By this point, every node has a tag URI assigned to it (at
+least conceptually). The constructor must know how to make a native object from
+every tag it sees. This part is often very specific to the language in use.
+
+Again, a full-featured implementation, can give the end user full control of
+what happens here. The YAML suggested advice here, is (if possible) default to
+what JSON would do, at least for nodes that are in the JSON Data Model.
+
+= Schema
+
+The term Schema, when used in relation to YAML, means the rules of how tag
+resolution and construction happen. YAML doesn't yet have a formal Schema
+language, although its been talked about for over a decade.
+
+Most YAML schemas are baked into the implementation, and the key rule for a
+default Dumper / Loader is: whatever you dump, make sure it loads back the same
+way.
+
+A common confusion point is that people assume that YAML text must be loaded in
+a specific way (following a specific schema) but to the contrary, any YAML can
+be loaded to almost any Native. It all depends on the Schema rules in play.
+That said, in a Schema-less context, YAML should load similar to JSON.
+
+= YAML and JSON
+
+YAML and JSON have a interesting relationship. It is a goal of YAML to ensure
+that YAML is a complete superset of JSON, both syntactically, and with regard
+to Schema / Model.
+
+All the above makes it seem that JSON is so simple and YAML is so complex.
+There is some truth to that. The syntax of YAML is much more complex (as an
+attempt to make the human experience seem more simple).
+
+But JSON loaders could certainly be full stack, thus allowing streaming
+operations like YAML is designed to allow.
+
+= Back to Real Life
+
+The GitHub issue above deals with how to load:
+
+    perl:
+    - 5.20
+
+and the answer should now be fairly obvious. By default (no special schema
+requests) and if the Native language supports floating point numbers, it should
+be loaded as a number.
+
+So loading this is a `5.2` is completely appropriate, and in a multi-language
+environment like Travis-CI, users should quote things like this, thus
+indicating it should be a string:
+
+    perl:
+    - '5.20'
+
+Although the nice people at Travis could certainly make `5.2` an alias for
+`5.20`. :-)
+
+= Of Perl
+
+The creator of the GitHub issue is a Perl programmer. He points out that the
+3-4 YAML implementations in Perl (2 of which are mine) load 5.20 as a string.
+That's actually subjective. In Perl, scalars are not supposed to be thought of
+as strings or numbers. They act as both according to context.
+
+As a Perl framework author, the most flexible thing to do is just load as a
+string, since it should work fine in both contexts.
+
+The flip side, is that it gives the false impression that other languages will
+do the same.
+
+= Conclusion
+
+I hope this helps people understand YAML a bit better. Please feel free to
+engage with me on IRC `irc.freenode.net#yaml`.
+
+Also have a read of this blog post I wrote last month:
+
+"YAML Like a Pro"[http://www.activestate.com/blog/2014/07/yaml-pro]
